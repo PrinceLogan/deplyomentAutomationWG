@@ -1,0 +1,13 @@
+provider "linode" {
+  token = ""
+}
+
+resource "linode_instance" "1uuidSender" {
+    label = "1uuidSender"
+    image = "linode/ubuntu18.04"
+    region = "us-central"
+    type = "g6-standard-1"
+    root_pass = "${var.root_pass}"
+}
+
+variable "root_pass" {}

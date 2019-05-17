@@ -1,0 +1,43 @@
+- 
+  become: true
+  gather_facts: false
+  hosts: all
+  pre_tasks:
+    -
+      name: "install python"
+      raw: "apt-get -y install python"
+  tasks:
+    -
+      name: "Run the equivalent of \"apt-get update\" the first time."
+      apt:
+        update_cache: true
+    -
+      name: Install the first list of packages
+      apt:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+    -
+      name: "Add Dockers official GPG key"
+      raw: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+    -
+      name: "Setup the stable repository"
+      raw: "add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\""
+    -
+      name: "Run the equivalent of \"apt-get update\" again"
+      apt:
+        update_cache: true
+    -
+      name: Install second list of packages
+      apt:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
