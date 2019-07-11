@@ -1,0 +1,81 @@
+--- 
+- 
+  become: true
+  gather_facts: false
+  hosts: all
+  pre_tasks: 
+    - 
+      name: "install python"
+      raw: "apt-get -y install python"
+  tasks: 
+    - 
+      name: "Set Hostname 1"
+      raw: "echo \"2uuidSenderKB\" > /etc/hostname"
+    - 
+      name: "Set Hostname 2"
+      raw: "hostname -F /etc/hostname"
+    - 
+      apt: 
+        update_cache: true
+      name: "Run the equivalent of \"apt-get update\" the first time."
+    - 
+      apt: 
+        name: "{{ packages }}"
+      name: "Install the first list of packages"
+      vars: 
+        packages: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+    - 
+      name: "Add Dockers official GPG key"
+      raw: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+    - 
+      name: "Setup the stable repository"
+      raw: "add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\""
+    - 
+      apt: 
+        update_cache: true
+      name: "Run the equivalent of \"apt-get update\" again"
+    - 
+      apt: 
+        name: "{{ packages }}"
+      name: "Install second list of packages"
+      vars: 
+        packages: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    - 
+      name: "Add the required GPG key to authenticate the Kubernetes related packages"
+      raw: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -"
+    - 
+      name: Replace a localhost entry with our own
+      lineinfile:
+        path: /etc/apt/sources.list.d/kubernetes.list
+        line: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        create: yes
+        owner: root
+        group: root
+        mode: '0644'
+    - 
+      apt: 
+        update_cache: true
+      name: "Run the equivalent of \"apt-get update\" a 3rd time"
+    - 
+      apt: 
+        name: "{{ packages }}"
+      name: "Install Kubernetes Packages"
+      vars: 
+        packages: 
+          - kubelet
+          - kubeadm
+          - kubectl
+    - 
+      name: "Lock the versions of Kuberenetees stuff"
+      raw: "apt-mark hold kubelet kubeadm kubectl"
+    - 
+      name: "Disable SWAP since kubernetes can't work with swap enabled (1/2)"
+      shell: "swapoff -a\n"

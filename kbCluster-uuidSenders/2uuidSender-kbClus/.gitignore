@@ -1,0 +1,5 @@
+linode.tf
+terraform.tfstate
+terraform.tfstate.backup
+pass.txt
+linode.tf.needs.Modified

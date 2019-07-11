@@ -1,0 +1,108 @@
+--- 
+- 
+  become: true
+  gather_facts: false
+  hosts: all
+  pre_tasks: 
+    - 
+      name: "install python"
+      raw: "apt-get -y install python"
+  tasks:     
+    - 
+      name: "Set Hostname 1"
+      raw: "echo \"1uuidMasterKB\" > /etc/hostname"
+    - 
+      name: "Set Hostname 2"
+      raw: "hostname -F /etc/hostname"
+    - 
+      apt: 
+        update_cache: true
+      name: "Run the equivalent of \"apt-get update\" the first time."
+    - 
+      apt: 
+        name: "{{ packages }}"
+      name: "Install the first list of packages"
+      vars: 
+        packages: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+    - 
+      name: "Add Dockers official GPG key"
+      raw: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+    - 
+      name: "Setup the stable repository"
+      raw: "add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\""
+    - 
+      apt: 
+        update_cache: true
+      name: "Run the equivalent of \"apt-get update\" again"
+    - 
+      apt: 
+        name: "{{ packages }}"
+      name: "Install second list of packages"
+      vars: 
+        packages: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    - 
+      name: "Add the required GPG key to authenticate the Kubernetes related packages"
+      raw: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -"
+    - 
+      lineinfile: 
+        create: true
+        group: root
+        line: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+        mode: "0644"
+        owner: root
+        path: /etc/apt/sources.list.d/kubernetes.list
+      name: "Replace a localhost entry with our own"
+    - 
+      apt: 
+        update_cache: true
+      name: "Run the equivalent of \"apt-get update\" a 3rd time"
+    - 
+      apt: 
+        name: "{{ packages }}"
+      name: "Install Kubernetes Packages"
+      vars: 
+        packages: 
+          - kubelet
+          - kubeadm
+          - kubectl
+    - 
+      name: "Lock the versions of Kuberenetees stuff"
+      raw: "apt-mark hold kubelet kubeadm kubectl"
+    - 
+      name: "Disable SWAP since kubernetes can't work with swap enabled (1/2)"
+      shell: "swapoff -a\n"
+    - 
+      name: "Init Kubernetes"
+      raw: "kubeadm init --pod-network-cidr=10.2.0.0/16"
+    - 
+      name: "Make Kube dir in home"
+      raw: "mkdir -p $HOME/.kube"
+    - 
+      name: "copy kube config"
+      raw: "cp -i /etc/kubernetes/admin.conf $HOME/.kube/config"
+    - 
+      name: "chown something related to kube"
+      raw: "chown $(id -u):$(id -g) $HOME/.kube/config"
+    - 
+      name: "Apply RBAC controls"
+      raw: "kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"    
+    - 
+      name: "Apply Calico"
+      raw: "kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"     
+    - 
+      name: "get join data"
+      shell: kubeadm token create --print-join-command
+      register: foo_result
+      ignore_errors: True     
+    - 
+      name: "save join data locally"
+      sudo: no
+      local_action: copy content={{ foo_result }} dest=/home/lojoho/wargamesAutomation/kbCluster-uuidSenders/joinData
