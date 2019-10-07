@@ -1,0 +1,278 @@
+variable "run_id" {
+}
+
+variable "root_pass" {
+}
+
+
+provider "azurerm" {
+    subscription_id = "*Data Required*"
+    client_id       = "*Data Required*"
+    client_secret   = "*Data Required*"
+    tenant_id       = "*Data Required"
+}
+
+resource "azurerm_resource_group" "resource_group_one" {
+    name     = "${var.run_id}-myResourceGroup1"
+    location = "eastus"
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_virtual_network" "network1" {
+    name                = "${var.run_id}-myVnet2"
+    address_space       = ["10.0.0.0/16"]
+    location            = "eastus"
+    resource_group_name = "${azurerm_resource_group.resource_group_one.name}"
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_subnet" "subnet1" {
+  name                 = "${var.run_id}-internal"
+  resource_group_name  = "${azurerm_resource_group.resource_group_one.name}"
+  virtual_network_name = "${azurerm_virtual_network.network1.name}"
+  address_prefix       = "10.0.2.0/24"
+}
+
+resource "azurerm_public_ip" "publicIPOne" {
+  name                = "${var.run_id}-pubIP1"
+  location            = "eastus"
+  resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
+  allocation_method   = "Static"
+
+}
+
+resource "azurerm_network_interface" "nic1" {
+  name                = "${azurerm_resource_group.resource_group_one.name}-nic"
+  location            = "${azurerm_resource_group.resource_group_one.location}"
+  resource_group_name = "${azurerm_resource_group.resource_group_one.name}"
+
+  ip_configuration {
+    name                          = "${var.run_id}-config2"
+    subnet_id                     = "${azurerm_subnet.subnet1.id}"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = "${azurerm_public_ip.publicIPOne.id}"
+  }
+}
+
+resource "azurerm_virtual_machine" "vm1" {
+    name                  = "${var.run_id}-VM1"
+    location              = "eastus"
+    resource_group_name   = "${azurerm_resource_group.resource_group_one.name}"
+    network_interface_ids = ["${azurerm_network_interface.nic1.id}"]
+    vm_size               = "Standard_DS1_v2"
+
+    storage_os_disk {
+        name              = "${var.run_id}-myOsDisk"
+        caching           = "ReadWrite"
+        create_option     = "FromImage"
+        managed_disk_type = "Premium_LRS"
+    }
+
+    storage_image_reference {
+        publisher = "Canonical"
+        offer     = "UbuntuServer"
+        sku       = "16.04.0-LTS"
+        version   = "latest"
+    }
+
+  os_profile {
+    computer_name  = "hostname"
+    admin_username = "lojoho"
+    admin_password = "${var.root_pass}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+
+    boot_diagnostics {
+        enabled     = "true"
+        storage_uri = "https://cactusjack.blob.core.windows.net"
+    }
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_resource_group" "myterraformgroup" {
+    name     = "${var.run_id}-myResourceGroup2"
+    location = "eastus"
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_virtual_network" "myterraformnetwork" {
+    name                = "${var.run_id}-myVnet1"
+    address_space       = ["10.0.0.0/16"]
+    location            = "eastus"
+    resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_subnet" "internal" {
+  name                 = "${var.run_id}-internal"
+  resource_group_name  = "${azurerm_resource_group.myterraformgroup.name}"
+  virtual_network_name = "${azurerm_virtual_network.myterraformnetwork.name}"
+  address_prefix       = "10.0.2.0/24"
+}
+
+resource "azurerm_public_ip" "publicIP" {
+  name                = "${var.run_id}-pubIP"
+  location            = "eastus"
+  resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
+  allocation_method   = "Static"
+
+}
+
+resource "azurerm_network_interface" "main" {
+  name                = "${azurerm_resource_group.myterraformgroup.name}-nic"
+  location            = "${azurerm_resource_group.myterraformgroup.location}"
+  resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
+
+  ip_configuration {
+    name                          = "${var.run_id}-config1"
+    subnet_id                     = "${azurerm_subnet.internal.id}"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = "${azurerm_public_ip.publicIP.id}"
+  }
+}
+resource "azurerm_virtual_machine" "myterraformvm" {
+    name                  = "${var.run_id}-VM2"
+    location              = "eastus"
+    resource_group_name   = "${azurerm_resource_group.myterraformgroup.name}"
+    network_interface_ids = ["${azurerm_network_interface.main.id}"]
+    vm_size               = "Standard_DS1_v2"
+
+    storage_os_disk {
+        name              = "${var.run_id}-myOsDisk"
+        caching           = "ReadWrite"
+        create_option     = "FromImage"
+        managed_disk_type = "Premium_LRS"
+    }
+
+    storage_image_reference {
+        publisher = "Canonical"
+        offer     = "UbuntuServer"
+        sku       = "16.04.0-LTS"
+        version   = "latest"
+    }
+
+  os_profile {
+    computer_name  = "hostname"
+    admin_username = "lojoho"
+    admin_password = "${var.root_pass}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+
+    boot_diagnostics {
+        enabled     = "true"
+        storage_uri = "https://cactusjack.blob.core.windows.net"
+    }
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_resource_group" "myterraformgroup3" {
+    name     = "${var.run_id}-myResourceGroup3"
+    location = "eastus"
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_virtual_network" "myterraformnetwork3" {
+    name                = "${var.run_id}-myVnet3"
+    address_space       = ["10.0.0.0/16"]
+    location            = "eastus"
+    resource_group_name = "${azurerm_resource_group.myterraformgroup3.name}"
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}
+
+resource "azurerm_subnet" "internal3" {
+  name                 = "${var.run_id}-internal3"
+  resource_group_name  = "${azurerm_resource_group.myterraformgroup3.name}"
+  virtual_network_name = "${azurerm_virtual_network.myterraformnetwork3.name}"
+  address_prefix       = "10.0.2.0/24"
+}
+
+resource "azurerm_public_ip" "publicIPThree" {
+  name                = "${var.run_id}-pubIP3"
+  location            = "eastus"
+  resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
+  allocation_method   = "Static"
+
+}
+
+resource "azurerm_network_interface" "main3" {
+  name                = "${azurerm_resource_group.myterraformgroup3.name}-nic"
+  location            = "${azurerm_resource_group.myterraformgroup3.location}"
+  resource_group_name = "${azurerm_resource_group.myterraformgroup3.name}"
+
+  ip_configuration {
+    name                          = "${var.run_id}-config3"
+    subnet_id                     = "${azurerm_subnet.internal3.id}"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = "${azurerm_public_ip.publicIPThree.id}"
+  }
+}
+resource "azurerm_virtual_machine" "myterraformvm3" {
+    name                  = "${var.run_id}-VM3"
+    location              = "eastus"
+    resource_group_name   = "${azurerm_resource_group.myterraformgroup3.name}"
+    network_interface_ids = ["${azurerm_network_interface.main3.id}"]
+    vm_size               = "Standard_DS1_v2"
+
+    storage_os_disk {
+        name              = "${var.run_id}-myOsDisk3"
+        caching           = "ReadWrite"
+        create_option     = "FromImage"
+        managed_disk_type = "Premium_LRS"
+    }
+
+    storage_image_reference {
+        publisher = "Canonical"
+        offer     = "UbuntuServer"
+        sku       = "16.04.0-LTS"
+        version   = "latest"
+    }
+
+  os_profile {
+    computer_name  = "hostname"
+    admin_username = "lojoho"
+    admin_password = "${var.root_pass}"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+
+    boot_diagnostics {
+        enabled     = "true"
+        storage_uri = "https://cactusjack.blob.core.windows.net"
+    }
+
+    tags = {
+        environment = "Terraform Demo"
+    }
+}

@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "routines.py", line 54, in <module>
+    engine.az_kill_machine()
+  File "/home/lojoho/wargamesAutomation/engine.py", line 300, in az_kill_machine
+    process1 = subprocess.call(event1, stdout=subprocess.PIPE)
+  File "/usr/lib/python3.6/subprocess.py", line 269, in call
+    return p.wait(timeout=timeout)
+  File "/usr/lib/python3.6/subprocess.py", line 1457, in wait
+    (pid, sts) = self._try_wait(0)
+  File "/usr/lib/python3.6/subprocess.py", line 1404, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+KeyboardInterrupt
