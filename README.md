@@ -1,8 +1,8 @@
 # deplyomentAutomationWG
 
-Deployment Automation Wargames. This is a tool which currently uses Terraform, Ansible, and kubernetes to launch dockerized instances of [webhookGenerator](https://github.com/PrinceLogan/webhookGenerator) and [webhookCounter](https://github.com/PrinceLogan/webhookCounter). 
+Deployment Automation Wargames. This is a tool which currently uses Terraform, Ansible, and kubernetes to launch dockerized instances of [webhookGenerator](https://github.com/PrinceLogan/webhookGenerator) and [webhookCounter](https://github.com/PrinceLogan/webhookCounter). This currently supports deployment onto hosting services Linode and Azure. 
 
-The goal of this project is to quickly be able to spin up a system to test modern DevOps systems. 
+The goal of this project is to quickly be able to spin up a system to test modern DevOps systems.
 
 Technologies currently employed:
 - Docker
