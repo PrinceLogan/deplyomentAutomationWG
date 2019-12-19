@@ -3,8 +3,14 @@
   become: true
   gather_facts: false
   hosts: all
-  pre_tasks: 
-    - 
+  pre_tasks:
+    -
+      name: "first apt update"
+      raw: "apt-get -y update"
+    -
+      name: "first apt updgrade"
+      raw: "DEBIAN_FRONTEND=noninteractive apt upgrade -y"
+    -
       name: "install python"
       raw: "apt-get -y install python"
   tasks:     
@@ -95,8 +101,11 @@
       name: "Apply RBAC controls"
       raw: "kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"    
     - 
+      name: "Download Calico"
+      raw: "curl https://docs.projectcalico.org/v3.9/manifests/calico.yaml -O"
+    - 
       name: "Apply Calico"
-      raw: "kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml"     
+      raw: "kubectl apply -f calico.yaml"      
     - 
       name: "get join data"
       shell: kubeadm token create --print-join-command

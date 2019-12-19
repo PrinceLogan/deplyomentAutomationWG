@@ -2,7 +2,15 @@
   become: true
   gather_facts: false
   hosts: all
+  vars:
+    HOST_KEY_CHECKING: false
   pre_tasks:
+    -
+      name: "first apt update"
+      raw: "apt-get -y update"
+    -
+      name: "first apt updgrade"
+      raw: "DEBIAN_FRONTEND=noninteractive apt upgrade -y"
     -
       name: "install python"
       raw: "apt-get -y install python"

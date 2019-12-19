@@ -6,6 +6,8 @@ import string
 import sys
 import json
 import random
+import time
+import os
 
 machines = ["1uuidSender-tf", "2uuidSender-tf", "recieverWebServer-tf"]
 senders = ["1uuidSender-tf", "2uuidSender-tf"]
@@ -14,7 +16,17 @@ kbCluster = ["1uuidSender-kbClus-mast", "2uuidSender-kbClus", "3uuidSender-kbClu
 kbMaster = ["1uuidSender-kbClus-mast"]
 kbWorker = ["2uuidSender-kbClus", "3uuidSender-kbClus"]
 azMachines = ["azureSenders-tf"]
+awsMachines = ["awsSenders-tf"]
 
+def meta_delete_hostkey():
+    ssh_dir = os.path.expanduser("~/.ssh/")
+    event1 = "rm -rf "
+    event1 = event1 + ssh_dir
+    print(event1)
+    process1 = subprocess.call(event1.split(), stdout=subprocess.PIPE)
+
+def meta_sleepy_time():
+    time.sleep(60)
 
 def sm_initate_all():
     for machine in machines:
@@ -66,7 +78,7 @@ def sm_build_reciever():
         ip_address = ip_address + ","
         with open(field2, 'r') as myfile:
             password=myfile.read().replace('\n', '')
-            password = "ansible_user=root " + "ansible_password=" + password
+            password = "ansible_user=root " + "ansible_password=" + password 
         event1 = ["ansible-playbook", "-i"]
         event1.extend([ip_address, "--extra-vars", password, field3])
         print(event1)
@@ -134,8 +146,8 @@ def start_all_kb_cluster():
         field2 = "./kbCluster-uuidSenders/" + machine
         field3 = "-state=./kbCluster-uuidSenders/" + machine + "/terraform.tfstate"
         event1 = ["terraform", "apply",  "-auto-approve", "-var"]
-        print(event1)
         event1.extend([field1, field3, field2])
+        print(event1)
         process1 = subprocess.call(event1, stdout=subprocess.PIPE)
 
 def build_kb_master():
@@ -218,7 +230,7 @@ def kb_start_process():
             password=myfile.read().replace('\n', '')
             password = "ansible_user=root " + "ansible_password=" + password
         x = 0
-        for x in range(0, 100):
+        for x in range(0, 10):
             list_1 = ["red", "green"]
             list_2 = ["1", "2", "3", "4", "5"]
             choice1 = random.choice(list_1)
@@ -371,6 +383,70 @@ def az_call_sender():
         print(event3)
         process3 = subprocess.call(event3, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 
+def aws_launch_machine():
+    for machine in awsMachines:
+        alphabet1 = string.ascii_letters + string.digits
+        alphabet2 = string.digits
+        password = ''.join(secrets.choice(alphabet1) for i in range(10))
+        run = ''.join(secrets.choice(alphabet2) for i in range(4))
+        sys.stderr = open('log.txt', 'w')
+        jackBeNimble = "./" + machine + "/pass.txt"
+        jackBeNimble2 = "./" + machine + "/run.txt"
+        f = open(jackBeNimble, 'w')
+        f.write("{}".format(password))
+        f.close()
+        f = open(jackBeNimble2, 'w')
+        f.write("{}".format(run))
+        f.close()
+        field1 = "root_pass=" + password
+        field2 = "./" + machine
+        field3 = "-state-out=./" + machine + "/"
+        field3 = "-state=./" + machine + "/terraform.tfstate"
+        field4 = "-var"
+        field4b = "run_id=" + run
+        field5 = "-lock=false"
+        event1 = ["terraform", "apply",  "-auto-approve", "-var"]
+        event1.extend([field1, field4, field4b, field5, field3, field2])
+        print(event1)
+        #process1 = subprocess.call(event1, stdout=subprocess.PIPE)
+
+def aws_initate_all():
+    for machine in awsMachines:
+        event1 = ("terraform init ./{}".format(machine))
+        sys.stderr = open('log.txt', 'a+')
+        #process1 = subprocess.call(event1.split(), stdout=subprocess.PIPE)
+
+def aws_create_sender():
+    for machine in awsMachines:
+        field1 = "./" + machine + "/terraform.tfstate"
+        field2 = "./" + machine + "/pass.txt"
+        field3 = "./" + machine +"/ansibleData/deploy.yml"
+        with open(field1) as json_file:
+            data = json.load(json_file)
+            for modules in data['modules']:
+                ip_address1 = str(modules['resources']['azurerm_public_ip.publicIP']['primary']['attributes']['ip_address'])
+                ip_address2 = str(modules['resources']['azurerm_public_ip.publicIPOne']['primary']['attributes']['ip_address'])
+                ip_address3 = str(modules['resources']['azurerm_public_ip.publicIPThree']['primary']['attributes']['ip_address'])
+        ip_address1 = ip_address1 + ","
+        ip_address2 = ip_address2 + ","
+        ip_address3 = ip_address3 + ","
+        with open(field2, 'r') as myfile:
+            password=myfile.read().replace('\n', '')
+            password = "ansible_user=lojoho " + "ansible_password=" + password
+        event1 = ["ansible-playbook", "-i"]
+        event1.extend([ip_address1, "--extra-vars", password, field3])
+        print(event1)
+        #process1 = subprocess.call(event1, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        event2 = ["ansible-playbook", "-i"]
+        event2.extend([ip_address2, "--extra-vars", password, field3])
+        print(event2)
+        #process2 = subprocess.call(event2, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        event3 = ["ansible-playbook", "-i"]
+        event3.extend([ip_address3, "--extra-vars", password, field3])
+        print(event3)
+        #process3 = subprocess.call(event2, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+
+
 if __name__ == "__main__":
     sm_initate_all()
     sm_start_all()
@@ -389,7 +465,8 @@ if __name__ == "__main__":
     az_kill_machine()
     az_create_sender()
     az_call_sender()
-
+    meta_delete_hostkey()
+    meta_sleepy_time()
 
 
 
